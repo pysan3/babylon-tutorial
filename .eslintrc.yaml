@@ -1,0 +1,36 @@
+root: true
+parser: '@typescript-eslint/parser'
+parserOptions:
+  project: './tsconfig.json'
+plugins:
+  - '@typescript-eslint'
+  - import
+  - prettier
+extends:
+  - prettier
+  - eslint:recommended
+  - airbnb-base
+  - airbnb-typescript/base
+  - plugin:@typescript-eslint/recommended
+rules:
+  prettier/prettier: 'error'
+  no-unused-vars: 'warn'
+  '@typescript-eslint/no-unused-vars': 'warn'
+  no-use-before-define: 'warn'
+  '@typescript-eslint/no-use-before-define': 'warn'
+  guard-for-in: 'off'
+  no-underscore-dangle: 'off'
+  no-restricted-syntax: 'off'
+  no-continue: 'off'
+  no-console: 'off'
+  quotes: ['error', 'single']
+  indent:
+    - error
+    - 2
+    - SwitchCase: 1
+  max-len:
+    - error
+    - code: 256
+  no-plusplus:
+    - error
+    - allowForLoopAfterthoughts: true
