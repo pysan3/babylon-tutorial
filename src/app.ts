@@ -7,10 +7,16 @@ import {
   ArcRotateCamera,
   Vector3,
   HemisphericLight,
+  ShadowGenerator,
+  PointLight,
   Mesh,
   MeshBuilder,
   Color4,
+  Color3,
   FreeCamera,
+  Matrix,
+  Quaternion,
+  StandardMaterial,
 } from '@babylonjs/core';
 import {
   AdvancedDynamicTexture,
@@ -21,6 +27,8 @@ import {
   Control,
   Image,
 } from '@babylonjs/gui';
+import Environment from './environment';
+import Player from './characterController';
 
 enum State {
   START = 0,
@@ -30,11 +38,17 @@ enum State {
 }
 
 class App {
+  public assets: any;
+
+  private _player: Player;
+
   private _scene: Scene;
 
   private _canvas: HTMLCanvasElement;
 
   private _engine: Engine;
+
+  private _environment: Environment;
 
   private _state = 0;
 
@@ -166,7 +180,7 @@ class App {
     const camera = new FreeCamera(
       'camera1',
       new Vector3(0, 0, 0),
-      this._cutScene
+      this._cutScene,
     );
     camera.setTarget(Vector3.Zero());
 
@@ -203,6 +217,13 @@ class App {
   private async _setUpGame() {
     const scene = new Scene(this._engine);
     this._gameScene = scene;
+
+    // Create ENVIRONMENT
+    const environment = new Environment(scene);
+    this._environment = environment;
+    await this._environment.load();
+
+    await this._loadCharacterAssets(scene);
   }
 
   private async _goToGame() {
@@ -220,21 +241,21 @@ class App {
       Math.PI / 2,
       2,
       Vector3.Zero(),
-      scene
+      scene,
     );
     camera.setTarget(Vector3.Zero());
 
     const playerUI = AdvancedDynamicTexture.CreateFullscreenUI('UI');
     scene.detachControl();
-    const loseButton = Button.CreateSimpleButton('losemenu', 'lose');
-    loseButton.thickness = 0;
-    loseButton.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+    const loseButton = Button.CreateSimpleButton('lose', 'LOSE');
     loseButton.width = 0.2;
-    loseButton.height = '40ox';
+    loseButton.height = '40px';
     loseButton.color = 'white';
     loseButton.top = '-14px';
+    loseButton.thickness = 0;
+    loseButton.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
     playerUI.addControl(loseButton);
-    loseButton.onPointerUpObservable.add(() => {
+    loseButton.onPointerDownObservable.add(() => {
       this._goToLose();
       scene.detachControl();
     });
@@ -242,13 +263,20 @@ class App {
     const light1: HemisphericLight = new HemisphericLight(
       'light1',
       new Vector3(1, 1, 0),
-      this._scene
+      scene,
     );
     const sphere: Mesh = MeshBuilder.CreateSphere(
       'sphere',
       { diameter: 1 },
-      this._scene
+      scene,
     );
+
+    // await this._initializeGameAsync(scene);
+
+    // // Scene FINISHED LOADING
+    // await scene.whenReadyAsync();
+    // const outerMesh = scene.getMeshByName('outer');
+    // if (outerMesh !== null) outerMesh.position = new Vector3(0, 3, 0);
 
     this._scene.dispose();
     this._state = State.GAME;
@@ -282,6 +310,90 @@ class App {
     window.addEventListener('resize', () => {
       this._engine.resize();
     });
+  }
+
+  // load the character model
+  private async _loadCharacterAssets(scene: Scene): Promise<any> {
+    async function loadCharacter() {
+      // collision mesh
+      const outer = MeshBuilder.CreateBox(
+        'outer',
+        { width: 2, depth: 1, height: 3 },
+        scene,
+      );
+      outer.isVisible = false;
+      outer.isPickable = false;
+      outer.checkCollisions = true;
+      // move origin of box collider to the bottom of the mesh (to match player mesh)
+      outer.bakeTransformIntoVertices(Matrix.Translation(0, 1.5, 0));
+
+      // for collisions
+      outer.ellipsoid = new Vector3(1, 1.5, 1);
+      outer.ellipsoidOffset = new Vector3(0, 1.5, 0);
+      // rotate the player mesh 180 since we want to see the back of the player
+      outer.rotationQuaternion = new Quaternion(0, 1, 0, 0);
+
+      // --IMPORTING MESH--
+      const box = MeshBuilder.CreateBox(
+        'Small1',
+        {
+          width: 0.5,
+          depth: 0.5,
+          height: 0.25,
+          faceColors: [
+            new Color4(0, 0, 0, 1),
+            new Color4(0, 0, 0, 1),
+            new Color4(0, 0, 0, 1),
+            new Color4(0, 0, 0, 1),
+            new Color4(0, 0, 0, 1),
+            new Color4(0, 0, 0, 1),
+          ],
+        },
+        scene,
+      );
+      box.position.x = 1.5;
+      box.position.z = 1;
+      const body = Mesh.CreateCylinder('body', 3, 2, 2, 0, 0, scene);
+      const bodymtl = new StandardMaterial('red', scene);
+      bodymtl.diffuseColor = new Color3(0.8, 0.5, 0.5);
+      body.material = bodymtl;
+      body.isPickable = false;
+      body.bakeTransformIntoVertices(Matrix.Translation(0, 1.5, 0));
+      box.parent = body;
+      body.parent = outer;
+
+      return {
+        mesh: outer as Mesh,
+      };
+    }
+
+    return loadCharacter().then((assets) => {
+      this.assets = assets;
+    });
+  }
+
+  private async _initializeGameAsync(scene: Scene): Promise<void> {
+    // temporary light to light the entire scene
+    const light0 = new HemisphericLight(
+      'HemiLight',
+      new Vector3(0, 1, 0),
+      scene,
+    );
+
+    const light = new PointLight('sparklight', new Vector3(0, 0, 0), scene);
+    light.diffuse = new Color3(
+      0.08627450980392157,
+      0.10980392156862745,
+      0.15294117647058825,
+    );
+    light.intensity = 35;
+    light.radius = 1;
+
+    const shadowGenerator = new ShadowGenerator(1024, light);
+    shadowGenerator.darkness = 0.4;
+
+    // Create the player
+    this._player = new Player(this.assets, scene, shadowGenerator); // dont have inputs yet so we dont need to pass it in
   }
 }
 
