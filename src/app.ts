@@ -82,17 +82,17 @@ class App {
 
   private _createCanvas(): HTMLCanvasElement {
     // Commented out for development
-    document.documentElement.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
-    document.documentElement.style.width = '100%';
-    document.documentElement.style.height = '100%';
-    document.documentElement.style.margin = '0';
-    document.documentElement.style.padding = '0';
-    document.body.style.overflow = 'hidden';
-    document.body.style.width = '100%';
-    document.body.style.height = '100%';
-    document.body.style.margin = '0';
-    document.body.style.padding = '0';
+    // document.documentElement.style.overflow = 'hidden';
+    // document.documentElement.style.overflow = 'hidden';
+    // document.documentElement.style.width = '100%';
+    // document.documentElement.style.height = '100%';
+    // document.documentElement.style.margin = '0';
+    // document.documentElement.style.padding = '0';
+    // document.body.style.overflow = 'hidden';
+    // document.body.style.width = '100%';
+    // document.body.style.height = '100%';
+    // document.body.style.margin = '0';
+    // document.body.style.padding = '0';
 
     // create the canvas html element and attach it to the webpage
     this._canvas = document.createElement('canvas');
@@ -239,8 +239,8 @@ class App {
       'Camera',
       Math.PI / 2,
       Math.PI / 2,
-      2,
-      Vector3.Zero(),
+      40,
+      new Vector3(0, 3, 0),
       scene,
     );
     camera.setTarget(Vector3.Zero());
@@ -271,12 +271,12 @@ class App {
       scene,
     );
 
-    // await this._initializeGameAsync(scene);
+    await this._initializeGameAsync(scene);
 
-    // // Scene FINISHED LOADING
-    // await scene.whenReadyAsync();
-    // const outerMesh = scene.getMeshByName('outer');
-    // if (outerMesh !== null) outerMesh.position = new Vector3(0, 3, 0);
+    // Scene FINISHED LOADING
+    await scene.whenReadyAsync();
+    const outerMesh = scene.getMeshByName('outer');
+    if (outerMesh !== null) outerMesh.position = new Vector3(0, 3, 0);
 
     this._scene.dispose();
     this._state = State.GAME;
