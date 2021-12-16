@@ -29,6 +29,7 @@ import {
 } from '@babylonjs/gui';
 import Environment from './environment';
 import Player from './characterController';
+import PlayerInput from './inputController';
 
 enum State {
   START = 0,
@@ -38,23 +39,29 @@ enum State {
 }
 
 class App {
-  public assets: any;
-
-  private _player: Player;
-
+  // General Entire Application
   private _scene: Scene;
-
   private _canvas: HTMLCanvasElement;
-
   private _engine: Engine;
 
+  // Game State Related
+  public assets: any;
+  private _input: PlayerInput;
+  private _player: Player;
   private _environment: Environment;
 
-  private _state = 0;
+  // Sounds
+  // public sfx: Sound;
+  // public game: Sound;
+  // public end: Sound;
 
+  // Scene - related
+  private _state = 0;
+  private _gamescene: Scene;
   private _cutScene: Scene;
 
-  private _gameScene: Scene;
+  // post process
+  private _transition = false;
 
   constructor() {
     // create the canvas html element and attach it to the webpage
@@ -278,6 +285,7 @@ class App {
     const outerMesh = scene.getMeshByName('outer');
     if (outerMesh !== null) outerMesh.position = new Vector3(0, 3, 0);
 
+    this._input = new PlayerInput(scene);
     this._scene.dispose();
     this._state = State.GAME;
     this._scene = scene;
@@ -393,7 +401,8 @@ class App {
     shadowGenerator.darkness = 0.4;
 
     // Create the player
-    this._player = new Player(this.assets, scene, shadowGenerator); // dont have inputs yet so we dont need to pass it in
+    // this._player = new Player(this.assets, scene, shadowGenerator); // dont have inputs yet so we dont need to pass it in
+    this._player = new Player(this.assets, scene, shadowGenerator, this._input);
   }
 }
 

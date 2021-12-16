@@ -6,7 +6,7 @@ import {
   Scalar,
 } from '@babylonjs/core';
 
-export class PlayerInput {
+export default class PlayerInput {
   public inputMap: any;
   private _scene: Scene;
 
