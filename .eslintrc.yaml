@@ -41,7 +41,7 @@ rules:
     - SwitchCase: 1
   max-len:
     - error
-    - code: 256
+    - code: 120
   no-plusplus:
     - error
     - allowForLoopAfterthoughts: true
