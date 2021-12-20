@@ -1,10 +1,4 @@
-import {
-  Scene,
-  ActionManager,
-  ExecuteCodeAction,
-  Observer,
-  Scalar,
-} from '@babylonjs/core';
+import { Scene, ActionManager, ExecuteCodeAction, Observer, Scalar } from '@babylonjs/core';
 
 export default class PlayerInput {
   public inputMap: any;
