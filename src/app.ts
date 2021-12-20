@@ -17,16 +17,9 @@ import {
   Matrix,
   Quaternion,
   StandardMaterial,
+  SceneLoader,
 } from '@babylonjs/core';
-import {
-  AdvancedDynamicTexture,
-  StackPanel,
-  Button,
-  TextBlock,
-  Rectangle,
-  Control,
-  Image,
-} from '@babylonjs/gui';
+import { AdvancedDynamicTexture, StackPanel, Button, TextBlock, Rectangle, Control, Image } from '@babylonjs/gui';
 import Environment from './environment';
 import Player from './characterController';
 import PlayerInput from './inputController';
@@ -57,7 +50,7 @@ class App {
 
   // Scene - related
   private _state = 0;
-  private _gamescene: Scene;
+  private _gameScene: Scene;
   private _cutScene: Scene;
 
   // post process
@@ -184,11 +177,7 @@ class App {
     this._scene.detachControl();
     this._cutScene = new Scene(this._engine);
     this._cutScene.clearColor = new Color4(0, 0, 0, 1);
-    const camera = new FreeCamera(
-      'camera1',
-      new Vector3(0, 0, 0),
-      this._cutScene,
-    );
+    const camera = new FreeCamera('camera1', new Vector3(0, 0, 0), this._cutScene);
     camera.setTarget(Vector3.Zero());
 
     // GUI
@@ -237,11 +226,7 @@ class App {
     // SETUP
     this._scene.detachControl();
     const scene = this._gameScene;
-    scene.clearColor = new Color4(
-      0.01568627450980392,
-      0.01568627450980392,
-      0.20392156862745098,
-    );
+    scene.clearColor = new Color4(0.01568627450980392, 0.01568627450980392, 0.20392156862745098);
     const camera: ArcRotateCamera = new ArcRotateCamera(
       'Camera',
       Math.PI / 2,
@@ -267,25 +252,19 @@ class App {
       scene.detachControl();
     });
 
-    const light1: HemisphericLight = new HemisphericLight(
-      'light1',
-      new Vector3(1, 1, 0),
-      scene,
-    );
-    const sphere: Mesh = MeshBuilder.CreateSphere(
-      'sphere',
-      { diameter: 1 },
-      scene,
-    );
+    const light1: HemisphericLight = new HemisphericLight('light1', new Vector3(1, 1, 0), scene);
+    const sphere: Mesh = MeshBuilder.CreateSphere('sphere', { diameter: 1 }, scene);
 
+    // INPUT
+    this._input = new PlayerInput(scene);
+
+    // initialize the game loop
     await this._initializeGameAsync(scene);
 
     // Scene FINISHED LOADING
     await scene.whenReadyAsync();
-    const outerMesh = scene.getMeshByName('outer');
-    if (outerMesh !== null) outerMesh.position = new Vector3(0, 3, 0);
+    scene.getMeshByName('outer')!.position = scene.getTransformNodeByName('startPosition')!.getAbsolutePosition();
 
-    this._input = new PlayerInput(scene);
     this._scene.dispose();
     this._state = State.GAME;
     this._scene = scene;
@@ -324,11 +303,7 @@ class App {
   private async _loadCharacterAssets(scene: Scene): Promise<any> {
     async function loadCharacter() {
       // collision mesh
-      const outer = MeshBuilder.CreateBox(
-        'outer',
-        { width: 2, depth: 1, height: 3 },
-        scene,
-      );
+      const outer = MeshBuilder.CreateBox('outer', { width: 2, depth: 1, height: 3 }, scene);
       outer.isVisible = false;
       outer.isPickable = false;
       outer.checkCollisions = true;
@@ -342,37 +317,49 @@ class App {
       outer.rotationQuaternion = new Quaternion(0, 1, 0, 0);
 
       // --IMPORTING MESH--
-      const box = MeshBuilder.CreateBox(
-        'Small1',
-        {
-          width: 0.5,
-          depth: 0.5,
-          height: 0.25,
-          faceColors: [
-            new Color4(0, 0, 0, 1),
-            new Color4(0, 0, 0, 1),
-            new Color4(0, 0, 0, 1),
-            new Color4(0, 0, 0, 1),
-            new Color4(0, 0, 0, 1),
-            new Color4(0, 0, 0, 1),
-          ],
-        },
-        scene,
-      );
-      box.position.x = 1.5;
-      box.position.z = 1;
-      const body = Mesh.CreateCylinder('body', 3, 2, 2, 0, 0, scene);
-      const bodymtl = new StandardMaterial('red', scene);
-      bodymtl.diffuseColor = new Color3(0.8, 0.5, 0.5);
-      body.material = bodymtl;
-      body.isPickable = false;
-      body.bakeTransformIntoVertices(Matrix.Translation(0, 1.5, 0));
-      box.parent = body;
-      body.parent = outer;
+      // const box = MeshBuilder.CreateBox(
+      //   'Small1',
+      //   {
+      //     width: 0.5,
+      //     depth: 0.5,
+      //     height: 0.25,
+      //     faceColors: [
+      //       new Color4(0, 0, 0, 1),
+      //       new Color4(0, 0, 0, 1),
+      //       new Color4(0, 0, 0, 1),
+      //       new Color4(0, 0, 0, 1),
+      //       new Color4(0, 0, 0, 1),
+      //       new Color4(0, 0, 0, 1),
+      //     ],
+      //   },
+      //   scene,
+      // );
+      // box.position.x = 1.5;
+      // box.position.z = 1;
+      // const body = Mesh.CreateCylinder('body', 3, 2, 2, 0, 0, scene);
+      // const bodymtl = new StandardMaterial('red', scene);
+      // bodymtl.diffuseColor = new Color3(0.8, 0.5, 0.5);
+      // body.material = bodymtl;
+      // body.isPickable = false;
+      // body.bakeTransformIntoVertices(Matrix.Translation(0, 1.5, 0));
+      // box.parent = body;
+      // body.parent = outer;
+      // return {
+      //   mesh: outer as Mesh,
+      // };
+      return SceneLoader.ImportMeshAsync(null, './models/', 'player.glb', scene).then((result) => {
+        const root = result.meshes[0];
+        const body = root;
+        body.parent = outer;
+        body.isPickable = false;
+        body.getChildMeshes().forEach((m) => {
+          m.isPickable = false;
+        });
 
-      return {
-        mesh: outer as Mesh,
-      };
+        return {
+          mesh: outer as Mesh,
+        };
+      });
     }
 
     return loadCharacter().then((assets) => {
@@ -382,18 +369,10 @@ class App {
 
   private async _initializeGameAsync(scene: Scene): Promise<void> {
     // temporary light to light the entire scene
-    const light0 = new HemisphericLight(
-      'HemiLight',
-      new Vector3(0, 1, 0),
-      scene,
-    );
+    const light0 = new HemisphericLight('HemiLight', new Vector3(0, 1, 0), scene);
 
     const light = new PointLight('sparklight', new Vector3(0, 0, 0), scene);
-    light.diffuse = new Color3(
-      0.08627450980392157,
-      0.10980392156862745,
-      0.15294117647058825,
-    );
+    light.diffuse = new Color3(0.08627450980392157, 0.10980392156862745, 0.15294117647058825);
     light.intensity = 35;
     light.radius = 1;
 
@@ -401,8 +380,9 @@ class App {
     shadowGenerator.darkness = 0.4;
 
     // Create the player
-    // this._player = new Player(this.assets, scene, shadowGenerator); // dont have inputs yet so we dont need to pass it in
     this._player = new Player(this.assets, scene, shadowGenerator, this._input);
+
+    const camera = this._player.activatePlayerCamera();
   }
 }
 

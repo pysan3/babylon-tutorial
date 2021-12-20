@@ -70,5 +70,8 @@ export default class PlayerInput {
       this.horizontal = 0;
       this.horizontalAxis = 0;
     }
+
+    this.dashing = !!this.inputMap.Shift;
+    this.jumpKeyDown = !!this.inputMap[' '];
   }
 }
